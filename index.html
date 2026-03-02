@@ -149,12 +149,14 @@
             const typingId = appendTypingIndicator();
 
             try {
-                // 5. Запрос к нейросети (Gemma 3)
+                // 5. Запрос к нейросети
                 const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${OPENROUTER_KEY}`,
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://andreypivovarov95-collab.github.io/", 
+                        "X-Title": "AI Assistant Bot"
                     },
                     body: JSON.stringify({
                         "model": "google/gemma-3-27b-it:free",
@@ -163,18 +165,25 @@
                 });
 
                 const data = await response.json();
+
+                // 6. Проверяем, нет ли системной ошибки от сервера
+                if (!response.ok) {
+                    throw new Error(data.error?.message || "Внутренняя ошибка OpenRouter");
+                }
+
                 const botReply = data.choices[0].message.content;
 
-                // 6. Удаляем индикатор и показываем ответ
+                // 7. Удаляем индикатор и показываем ответ
                 document.getElementById(typingId).remove();
                 appendMessage('bot', botReply);
                 
-                // 7. Сохраняем ответ в историю
+                // 8. Сохраняем ответ в историю
                 chatHistory.push({ role: "assistant", content: botReply });
 
             } catch (error) {
                 document.getElementById(typingId).remove();
-                appendMessage('bot', "❌ Ошибка соединения с нейросетью: " + error.message);
+                appendMessage('bot', "❌ Ошибка: " + error.message);
+                chatHistory.pop(); // Удаляем ваш вопрос из памяти, чтобы можно было спросить снова
             }
         }
     </script>
